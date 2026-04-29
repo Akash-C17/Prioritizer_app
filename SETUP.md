@@ -1,4 +1,4 @@
-# Decision AI - Product Decision System
+# PRIORA AI - Product Decision System
 
 A comprehensive system for reasoning through competing product decisions, constraints, and trade-offs during ideation and design phases.
 

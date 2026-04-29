@@ -33,7 +33,7 @@ export function Navigation() {
                 <Brain className="w-6 h-6 text-purple-600 group-hover:text-orange-500 transition-colors" />
               </motion.div>
               <span className="font-bold text-lg bg-gradient-to-r from-purple-600 via-purple-600 to-orange-500 bg-clip-text text-transparent">
-                Decision AI
+                PRIORA AI
               </span>
             </Link>
           </motion.div>

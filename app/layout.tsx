@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Decision AI - Product Decision System",
+  title: "PRIORA AI - Product Decision System",
   description: "Reasoning through competing product decisions, constraints, and trade-offs",
 };
 

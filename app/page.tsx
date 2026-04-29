@@ -23,23 +23,61 @@ const item = {
 };
 
 export default function Home() {
+
   const { projects, addProject, deleteProject, setCurrentProject } = useProjectStore();
   const [projectName, setProjectName] = useState("");
+  const [userStory, setUserStory] = useState("");
+  const [constraints, setConstraints] = useState<string[]>([]);
+  const [editingConstraint, setEditingConstraint] = useState<number | null>(null);
+  const [constraintInput, setConstraintInput] = useState("");
+
+  // Simple constraint generation from user story (stub, can be replaced with AI)
+  const generateConstraints = (story: string) => {
+    if (!story.trim()) return [];
+    // Example: split by sentences, or use keywords
+    return story
+      .split(/\.|\n/)
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(s => `Constraint: ${s}`);
+  };
 
   const handleAddProject = () => {
     if (!projectName.trim()) {
       toast.error("Project name is required");
       return;
     }
-
     addProject({
       name: projectName,
-      description: "",
+      description: userStory,
+      constraints,
       status: "ideation",
     });
-
     toast.success("Project created!");
     setProjectName("");
+    setUserStory("");
+    setConstraints([]);
+  };
+
+  const handleGenerateConstraints = () => {
+    setConstraints(generateConstraints(userStory));
+  };
+
+  const handleEditConstraint = (idx: number) => {
+    setEditingConstraint(idx);
+    setConstraintInput(constraints[idx]);
+  };
+
+  const handleSaveConstraint = (idx: number) => {
+    const updated = [...constraints];
+    updated[idx] = constraintInput;
+    setConstraints(updated);
+    setEditingConstraint(null);
+    setConstraintInput("");
+  };
+
+  const handleRemoveConstraint = (idx: number) => {
+    setConstraints(constraints.filter((_, i) => i !== idx));
   };
 
   const handleStartProject = (projectId: string) => {
@@ -63,7 +101,7 @@ export default function Home() {
             animate={{ scale: 1 }}
             transition={{ duration: 0.5 }}
           >
-            Decision AI
+            PRIORA AI
           </motion.h1>
           <motion.p 
             className="text-xl text-gray-700 mb-8"
@@ -76,7 +114,7 @@ export default function Home() {
 
           {/* New Project Form */}
           <motion.div 
-            className="flex gap-2 max-w-md mx-auto"
+            className="flex flex-col gap-4 max-w-md mx-auto bg-gray-50 p-6 rounded-lg border border-purple-200 shadow"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
@@ -86,9 +124,50 @@ export default function Home() {
               placeholder="Enter new project name..."
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAddProject()}
-              className="flex-1 px-4 py-3 bg-gray-50 border-2 border-purple-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 transition-all"
+              className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 transition-all"
             />
+            <textarea
+              placeholder="Describe your user story..."
+              value={userStory}
+              onChange={(e) => setUserStory(e.target.value)}
+              className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 transition-all min-h-[80px]"
+            />
+            <motion.button
+              onClick={handleGenerateConstraints}
+              className="px-4 py-2 bg-gradient-to-r from-purple-400 to-orange-400 rounded-lg text-white font-medium mb-2"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              Generate Constraints
+            </motion.button>
+            {constraints.length > 0 && (
+              <div className="bg-white border border-purple-100 rounded p-3 mb-2">
+                <div className="font-semibold mb-2 text-purple-700">Constraints (editable):</div>
+                <ul className="space-y-2">
+                  {constraints.map((c, idx) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      {editingConstraint === idx ? (
+                        <>
+                          <input
+                            className="flex-1 px-2 py-1 border rounded"
+                            value={constraintInput}
+                            onChange={e => setConstraintInput(e.target.value)}
+                          />
+                          <button className="text-green-600" onClick={() => handleSaveConstraint(idx)}>Save</button>
+                          <button className="text-gray-500" onClick={() => setEditingConstraint(null)}>Cancel</button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex-1">{c}</span>
+                          <button className="text-blue-600" onClick={() => handleEditConstraint(idx)}>Edit</button>
+                          <button className="text-red-500" onClick={() => handleRemoveConstraint(idx)}>Remove</button>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <motion.button
               onClick={handleAddProject}
               className="px-6 py-3 bg-gradient-to-r from-purple-600 to-orange-500 hover:shadow-lg rounded-lg font-medium flex items-center gap-2 transition-all text-white"
@@ -115,7 +194,7 @@ export default function Home() {
             >
               <p className="text-gray-600 text-lg mb-4">No projects yet. Create one to get started!</p>
               <div className="space-y-4 text-left max-w-2xl mx-auto">
-                <h3 className="font-semibold text-purple-600">What you can do:</h3>
+                <h3 className="font-semibold tenxt-purple-600">What you can do:</h3>
                 <ul className="space-y-2 text-gray-700">
                   <li>✨ Create feature scenarios and prioritize them</li>
                   <li>🤖 Get AI-powered analysis of your decisions</li>
