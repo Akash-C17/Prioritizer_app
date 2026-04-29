@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useProjectStore } from "@/lib/store";
 import { MessageSquare, Send, Trash2, User } from "lucide-react";
 import toast from "react-hot-toast";
+import { motion } from "framer-motion";
 
 interface Comment {
   id: string | number;
@@ -123,115 +124,149 @@ export default function Discussion() {
   };
 
   const statusColors: Record<Discussion["status"], string> = {
-    open: "bg-blue-900/30 text-blue-300 border border-blue-500/50",
-    resolved: "bg-green-900/30 text-green-300 border border-green-500/50",
-    pending: "bg-yellow-900/30 text-yellow-300 border border-yellow-500/50",
+    open: "bg-blue-100 text-blue-700 border border-blue-300",
+    resolved: "bg-green-100 text-green-700 border border-green-300",
+    pending: "bg-yellow-100 text-yellow-700 border border-yellow-300",
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 px-4 py-8">
+    <div className="min-h-screen bg-white px-4 py-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Product Discussion Panel</h1>
+        <motion.div 
+          className="mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-orange-500 bg-clip-text text-transparent">
+            Product Discussion Panel
+          </h1>
           {project && (
-            <p className="text-gray-400">
-              Project: <span className="text-blue-400">{project.name}</span>
+            <p className="text-gray-700">
+              Project: <span className="text-purple-600 font-semibold">{project.name}</span>
             </p>
           )}
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Discussions List */}
-          <div className="lg:col-span-1">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-              <div className="p-4 border-b border-gray-700">
-                <h2 className="text-lg font-semibold mb-3">Discussions</h2>
-                <button
+          <motion.div 
+            className="lg:col-span-1"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="bg-white border-2 border-purple-300 rounded-lg overflow-hidden shadow-lg">
+              <div className="p-4 border-b-2 border-purple-300 bg-gradient-to-r from-purple-50 to-orange-50">
+                <h2 className="text-lg font-semibold mb-3 text-gray-900">Discussions</h2>
+                <motion.button
                   onClick={() => setShowNewDiscussion(!showNewDiscussion)}
-                  className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium transition-colors"
+                  className="w-full px-3 py-2 bg-gradient-to-r from-purple-600 to-orange-500 hover:shadow-lg rounded text-sm font-medium transition-all text-white"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   + New Discussion
-                </button>
+                </motion.button>
               </div>
 
               {showNewDiscussion && (
-                <div className="p-4 border-b border-gray-700 space-y-2">
+                <motion.div 
+                  className="p-4 border-b-2 border-purple-300 space-y-2 bg-purple-50"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                >
                   <input
                     type="text"
                     placeholder="Discussion topic"
                     value={newTopic}
                     onChange={(e) => setNewTopic(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-white border-2 border-purple-300 rounded text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200"
                   />
                   <div className="flex gap-2">
-                    <button
+                    <motion.button
                       onClick={handleAddDiscussion}
-                      className="flex-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs font-medium transition-colors"
+                      className="flex-1 px-2 py-1 bg-gradient-to-r from-purple-600 to-orange-500 hover:shadow-lg rounded text-xs font-medium transition-all text-white"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       Create
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
                       onClick={() => setShowNewDiscussion(false)}
-                      className="flex-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors"
+                      className="flex-1 px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs font-medium transition-all text-gray-900"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       Cancel
-                    </button>
+                    </motion.button>
                   </div>
-                </div>
+                </motion.div>
               )}
 
-              <div className="divide-y divide-gray-700 max-h-96 overflow-y-auto">
-                {discussions.map((d) => (
-                  <button
+              <div className="divide-y divide-purple-200 max-h-96 overflow-y-auto">
+                {discussions.map((d, index) => (
+                  <motion.button
                     key={d.id}
                     onClick={() => setSelectedDiscussionId(d.id)}
-                    className={`w-full text-left px-4 py-3 transition-colors ${
+                    className={`w-full text-left px-4 py-3 transition-all ${
                       selectedDiscussionId === d.id
-                        ? "bg-gray-700 border-l-2 border-blue-500"
-                        : "hover:bg-gray-700/50"
+                        ? "bg-purple-100 border-l-4 border-purple-600"
+                        : "hover:bg-gray-50"
                     }`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: index * 0.05 }}
                   >
                     <div className="flex items-start gap-2">
-                      <MessageSquare className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+                      <MessageSquare className="w-4 h-4 text-purple-600 mt-1 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{d.topic}</p>
+                        <p className="font-medium text-sm text-gray-900 truncate">{d.topic}</p>
                         <p className="text-xs text-gray-500 mt-1">{d.comments.length} comments</p>
                       </div>
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Discussion Detail */}
           {selectedDiscussion && (
-            <div className="lg:col-span-2">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+            <motion.div 
+              className="lg:col-span-2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="bg-white border-2 border-purple-300 rounded-lg p-6 shadow-lg">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-2xl font-bold">{selectedDiscussion.topic}</h2>
-                    <p className="text-gray-400 mt-1">{selectedDiscussion.description}</p>
+                    <h2 className="text-2xl font-bold text-gray-900">{selectedDiscussion.topic}</h2>
+                    <p className="text-gray-700 mt-1">{selectedDiscussion.description}</p>
                   </div>
-                  <div className={`px-3 py-1 rounded text-sm font-medium ${statusColors[selectedDiscussion.status]}`}>
+                  <motion.div 
+                    className={`px-3 py-1 rounded text-sm font-medium ${statusColors[selectedDiscussion.status]}`}
+                    whileHover={{ scale: 1.05 }}
+                  >
                     {selectedDiscussion.status}
-                  </div>
+                  </motion.div>
                 </div>
 
                 {/* Status Options */}
-                <div className="flex gap-2 mb-6 pb-6 border-b border-gray-700">
+                <div className="flex gap-2 mb-6 pb-6 border-b-2 border-gray-300">
                   {(["open", "pending", "resolved"] as const).map((status) => (
-                    <button
+                    <motion.button
                       key={status}
                       onClick={() => handleUpdateStatus(status)}
-                      className={`px-3 py-1 rounded text-xs font-medium transition-colors capitalize ${
+                      className={`px-3 py-1 rounded text-xs font-medium transition-all capitalize ${
                         selectedDiscussion.status === status
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                          ? "bg-gradient-to-r from-purple-600 to-orange-500 text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                       }`}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       {status}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
 
@@ -240,29 +275,40 @@ export default function Discussion() {
                   {selectedDiscussion.comments.length === 0 ? (
                     <p className="text-gray-500 text-center py-8">No comments yet. Start the discussion!</p>
                   ) : (
-                    selectedDiscussion.comments.map((comment) => (
-                      <div key={comment.id} className="bg-gray-900 border border-gray-700 rounded p-4">
+                    selectedDiscussion.comments.map((comment, index) => (
+                      <motion.div 
+                        key={comment.id} 
+                        className="bg-gray-50 border-2 border-gray-300 rounded p-4"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                              <User className="w-4 h-4" />
-                            </div>
+                            <motion.div 
+                              className="w-8 h-8 bg-gradient-to-r from-purple-600 to-orange-500 rounded-full flex items-center justify-center"
+                              whileHover={{ scale: 1.1 }}
+                            >
+                              <User className="w-4 h-4 text-white" />
+                            </motion.div>
                             <div>
-                              <p className="font-medium text-sm">{comment.author}</p>
+                              <p className="font-medium text-sm text-gray-900">{comment.author}</p>
                               <p className="text-xs text-gray-500">
                                 {comment.timestamp.toLocaleString()}
                               </p>
                             </div>
                           </div>
-                          <button
+                          <motion.button
                             onClick={() => handleDeleteComment(comment.id)}
-                            className="p-1 hover:bg-red-900/30 rounded text-red-400 transition-colors"
+                            className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </motion.button>
                         </div>
-                        <p className="text-gray-300">{comment.text}</p>
-                      </div>
+                        <p className="text-gray-700">{comment.text}</p>
+                      </motion.div>
                     ))
                   )}
                 </div>
@@ -278,18 +324,20 @@ export default function Discussion() {
                         handleAddComment();
                       }
                     }}
-                    className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none h-16"
+                    className="flex-1 px-4 py-2 bg-gray-50 border-2 border-gray-300 rounded text-gray-900 placeholder-gray-500 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 resize-none h-16 transition-all"
                   />
-                  <button
+                  <motion.button
                     onClick={handleAddComment}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium flex items-center gap-2 transition-colors self-end"
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-orange-500 hover:shadow-lg rounded font-medium flex items-center gap-2 transition-all text-white self-end"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
                     <Send className="w-4 h-4" />
                     Send
-                  </button>
+                  </motion.button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
