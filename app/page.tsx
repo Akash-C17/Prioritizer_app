@@ -23,6 +23,33 @@ const item = {
 };
 
 export default function Home() {
+  const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [isRecommending, setIsRecommending] = useState(false);
+
+  // Call API to get recommendations based on user story and constraints
+  const fetchRecommendations = async () => {
+    if (!userStory.trim() && constraints.length === 0) {
+      toast.error("Please enter a user story or generate constraints first");
+      return;
+    }
+    setIsRecommending(true);
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problem: userStory, constraints }),
+      });
+      const data = await response.json();
+      setRecommendations(data.analysis?.recommendations || []);
+      if (data.analysis?.recommendations?.length > 0) {
+        toast.success("Recommendations loaded!");
+      }
+    } catch (error) {
+      toast.error("Failed to fetch recommendations");
+    } finally {
+      setIsRecommending(false);
+    }
+  };
 
   const { projects, addProject, deleteProject, setCurrentProject } = useProjectStore();
   const [projectName, setProjectName] = useState("");
@@ -30,16 +57,39 @@ export default function Home() {
   const [constraints, setConstraints] = useState<string[]>([]);
   const [editingConstraint, setEditingConstraint] = useState<number | null>(null);
   const [constraintInput, setConstraintInput] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Simple constraint generation from user story (stub, can be replaced with AI)
-  const generateConstraints = (story: string) => {
+  // Call API to generate constraints from user story
+  const generateConstraints = async (story: string) => {
     if (!story.trim()) return [];
-    // Example: split by sentences, or use keywords
-    return story
-      .split(/\.|\n/)
-      .map(s => s.trim())
-      .filter(Boolean)
-      .map(s => `Constraint: ${s}`);
+    setIsGenerating(true);
+    try {
+      const response = await fetch("/api/constraints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userStory: story }),
+      });
+      const data = await response.json();
+      return data.constraints || [];
+    } catch (error) {
+      console.error("Failed to generate constraints:", error);
+      toast.error("Failed to generate constraints");
+      return [];
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateConstraints = async () => {
+    if (!userStory.trim()) {
+      toast.error("Please enter a user story first");
+      return;
+    }
+    const generated = await generateConstraints(userStory);
+    setConstraints(generated);
+    if (generated.length > 0) {
+      toast.success(`Generated ${generated.length} constraints!`);
+    }
   };
 
   const handleAddProject = () => {
@@ -59,9 +109,6 @@ export default function Home() {
     setConstraints([]);
   };
 
-  const handleGenerateConstraints = () => {
-    setConstraints(generateConstraints(userStory));
-  };
 
   const handleEditConstraint = (idx: number) => {
     setEditingConstraint(idx);
@@ -134,11 +181,12 @@ export default function Home() {
             />
             <motion.button
               onClick={handleGenerateConstraints}
-              className="px-4 py-2 bg-gradient-to-r from-purple-400 to-orange-400 rounded-lg text-white font-medium mb-2"
+              disabled={isGenerating}
+              className="px-4 py-2 bg-gradient-to-r from-purple-400 to-orange-400 rounded-lg text-white font-medium mb-2 disabled:opacity-50"
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
             >
-              Generate Constraints
+              {isGenerating ? "Generating..." : "Generate Constraints"}
             </motion.button>
             {constraints.length > 0 && (
               <div className="bg-white border border-purple-100 rounded p-3 mb-2">
@@ -164,6 +212,27 @@ export default function Home() {
                         </>
                       )}
                     </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Recommended Features Section */}
+            <motion.button
+              onClick={fetchRecommendations}
+              disabled={isRecommending}
+              className="px-4 py-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg text-white font-medium mb-2 disabled:opacity-50"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              {isRecommending ? "Loading..." : "Show Recommended Features"}
+            </motion.button>
+            {recommendations.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-2">
+                <div className="font-semibold mb-2 text-blue-700">Recommended Features:</div>
+                <ul className="list-disc pl-5 space-y-1">
+                  {recommendations.map((rec, idx) => (
+                    <li key={idx} className="text-blue-900">{rec}</li>
                   ))}
                 </ul>
               </div>
