@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brain, Home, Zap, MessageSquare, History } from "lucide-react";
+import { Brain, Home, Zap, MessageSquare, History, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function Navigation() {
@@ -11,6 +11,7 @@ export function Navigation() {
   const navItems = [
     { href: "/", icon: Home, label: "Home" },
     { href: "/feature-prioritize", icon: Zap, label: "Prioritize" },
+    { href: "/constraint-check", icon: ShieldCheck, label: "Constraints" },
     { href: "/ai-analyze", icon: Brain, label: "AI Analyze" },
     { href: "/discussion", icon: MessageSquare, label: "Discussion" },
     { href: "/history", icon: History, label: "History" },
