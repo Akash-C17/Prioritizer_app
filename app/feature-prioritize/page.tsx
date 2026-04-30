@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useProjectStore } from "@/lib/store";
-import { Plus, Trash2, TrendingUp, BarChart3, AlertCircle } from "lucide-react";
+import { Plus, Trash2, TrendingUp, BarChart3, AlertCircle, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 
@@ -135,6 +135,84 @@ const generateRecommendationReasoning = (feature: Feature): string[] => {
 };
 
 /**
+ * Generate AI-powered final recommendation with detailed reasoning
+ */
+const generateFinalRecommendation = (sortedFeatures: Feature[]): { title: string; reasoning: string; comparison?: string } => {
+  const filledFeatures = sortedFeatures.filter(f => f.name.trim());
+  
+  if (filledFeatures.length === 0) {
+    return {
+      title: "No features to recommend",
+      reasoning: "Add features to receive a final recommendation.",
+    };
+  }
+
+  const top = filledFeatures[0];
+  const topScore = calculateScore(top);
+  
+  // Build reasoning based on top feature's strengths
+  const strengths: string[] = [];
+  const constraints: string[] = [];
+
+  if (top.impact > 7) strengths.push("high impact");
+  if (top.business > 7) strengths.push("strong business value");
+  if (top.alignment > 7) strengths.push("excellent strategic alignment");
+  if (top.effort < 4) strengths.push("low effort");
+  if (top.cost < 4) strengths.push("low cost");
+  if (top.risk < 4) strengths.push("low risk");
+
+  if (top.effort > 7) constraints.push("high effort required");
+  if (top.cost > 7) constraints.push("significant cost");
+  if (top.risk > 7) constraints.push("notable risks");
+  if (top.impact < 4) constraints.push("limited impact");
+  if (top.business < 4) constraints.push("lower business value");
+
+  let reasoning = "";
+  
+  if (strengths.length > 0) {
+    reasoning = `${top.name.trim()} is recommended because it has ${strengths.slice(0, 2).join(" and ")}`;
+    
+    if (constraints.length > 0) {
+      reasoning += `, while managing ${constraints[0]}`;
+    } else {
+      reasoning += ".";
+    }
+  } else {
+    reasoning = `${top.name.trim()} is the recommended choice based on overall score analysis.`;
+  }
+
+  // Add comparison with other features if available
+  let comparison = "";
+  if (filledFeatures.length > 1) {
+    const alternatives = filledFeatures.slice(1, 3);
+    comparison = "Compared to alternatives: ";
+    
+    const comparisons = alternatives.map(alt => {
+      const altScore = calculateScore(alt);
+      const scoreDiff = topScore - altScore;
+      
+      // Analyze why it's lower
+      let reason = "";
+      if (alt.effort > top.effort) reason = "higher effort";
+      else if (alt.cost > top.cost) reason = "higher cost";
+      else if (alt.impact < top.impact) reason = "lower impact";
+      else if (alt.business < top.business) reason = "lower business value";
+      else reason = "lower overall priority";
+      
+      return `${alt.name.trim()} (${altScore.toFixed(1)}/10) has ${reason}`;
+    });
+    
+    comparison += comparisons.join(", ");
+  }
+
+  return {
+    title: `🏆 ${top.name.trim()}`,
+    reasoning,
+    comparison: comparison || undefined,
+  };
+};
+
+/**
  * Generate AI-powered decision explanation based on features
  */
 const generateAIExplanation = (sortedFeatures: Feature[]): string => {
@@ -177,6 +255,125 @@ const generateAIExplanation = (sortedFeatures: Feature[]): string => {
   explanation += `\n💡 Key Insight: The recommended feature balances high opportunity (impact, business value, alignment) with manageable constraints (effort, cost, risk).`;
   
   return explanation;
+};
+
+/**
+ * Generate a comprehensive decision report for export
+ */
+const generateDecisionReport = (
+  features: Feature[],
+  projectName: string,
+  projectDescription: string,
+  projectConstraints: string[]
+): string => {
+  const filledFeatures = features.filter(f => f.name.trim());
+  const sortedFeatures = [...filledFeatures].sort((a, b) => calculateScore(b) - calculateScore(a));
+  
+  let report = `DECISION INTELLIGENCE REPORT\n`;
+  report += `${"=".repeat(60)}\n\n`;
+  
+  // Header with timestamp
+  const timestamp = new Date().toLocaleString();
+  report += `Generated: ${timestamp}\n\n`;
+  
+  // Project Information
+  report += `PROJECT INFORMATION\n`;
+  report += `${"-".repeat(60)}\n`;
+  report += `Project Name: ${projectName || "Untitled Project"}\n`;
+  if (projectDescription) {
+    report += `Problem/Description:\n${projectDescription}\n`;
+  }
+  if (projectConstraints.length > 0) {
+    report += `\nConstraints:\n`;
+    projectConstraints.forEach((c, idx) => {
+      report += `  ${idx + 1}. ${c}\n`;
+    });
+  }
+  report += `\n`;
+  
+  // Features Analysis
+  report += `FEATURES ANALYSIS\n`;
+  report += `${"-".repeat(60)}\n`;
+  report += `Total Features: ${filledFeatures.length}\n\n`;
+  
+  sortedFeatures.forEach((feature, idx) => {
+    const score = calculateScore(feature);
+    const priority = getPriorityLabel(score);
+    const insights = generateTradeoffInsights(feature);
+    
+    report += `${idx + 1}. ${feature.name}\n`;
+    report += `   Score: ${score.toFixed(2)}/10 | Priority: ${priority}\n`;
+    
+    if (feature.description) {
+      report += `   Description: ${feature.description}\n`;
+    }
+    
+    report += `   Metrics:\n`;
+    report += `     - Impact: ${feature.impact}/10\n`;
+    report += `     - Business Value: ${feature.business}/10\n`;
+    report += `     - Strategic Alignment: ${feature.alignment}/10\n`;
+    report += `     - Effort Required: ${feature.effort}/10\n`;
+    report += `     - Cost: ${feature.cost}/10\n`;
+    report += `     - Risk: ${feature.risk}/10\n`;
+    
+    if (insights.length > 0) {
+      report += `   Trade-off Insights:\n`;
+      insights.forEach(insight => {
+        report += `     • ${insight.label}\n`;
+      });
+    }
+    report += `\n`;
+  });
+  
+  // Final Recommendation
+  if (sortedFeatures.length > 0) {
+    report += `FINAL RECOMMENDATION\n`;
+    report += `${"-".repeat(60)}\n`;
+    
+    const rec = generateFinalRecommendation(sortedFeatures);
+    const topFeature = sortedFeatures[0];
+    const topScore = calculateScore(topFeature);
+    
+    report += `Recommended Feature: ${topFeature.name}\n`;
+    report += `Score: ${topScore.toFixed(2)}/10\n`;
+    report += `Priority: ${getPriorityLabel(topScore)}\n\n`;
+    
+    report += `Reasoning:\n${rec.reasoning}\n\n`;
+    
+    if (rec.comparison) {
+      report += `${rec.comparison}\n\n`;
+    }
+    
+    const reasons = generateRecommendationReasoning(topFeature);
+    if (reasons.length > 0) {
+      report += `Key Strengths:\n`;
+      reasons.forEach(reason => {
+        report += `  ✓ ${reason}\n`;
+      });
+    }
+  }
+  
+  // Scoring Methodology
+  report += `\n${"-".repeat(60)}\n`;
+  report += `SCORING METHODOLOGY\n`;
+  report += `${"-".repeat(60)}\n`;
+  report += `This report uses an advanced weighted scoring algorithm:\n\n`;
+  report += `Opportunity Factors:\n`;
+  report += `  • Impact (30%) - Business value potential\n`;
+  report += `  • Business Value (25%) - Revenue/growth potential\n`;
+  report += `  • Strategic Alignment (20%) - Strategic fit\n\n`;
+  report += `Effort Factors:\n`;
+  report += `  • Effort (25%) - Implementation work required\n`;
+  report += `  • Cost (15%) - Budget required\n`;
+  report += `  • Risk (10%) - Technical/business risk\n\n`;
+  report += `Priority Classification:\n`;
+  report += `  • High Priority: Score > 7\n`;
+  report += `  • Medium Priority: Score 4-7\n`;
+  report += `  • Low Priority: Score < 4\n`;
+  
+  report += `\n${"=".repeat(60)}\n`;
+  
+  return report;
 };
 
 export default function FeaturePrioritize() {
@@ -279,39 +476,61 @@ export default function FeaturePrioritize() {
         {/* Top Recommendation */}
         {sortedFeatures.length > 0 && sortedFeatures[0].name.trim() && (
           <motion.div 
-            className="bg-green-50 border-2 border-green-400 rounded-lg p-6 mb-8 shadow-md"
+            className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-400 rounded-lg p-6 mb-8 shadow-lg"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
           >
             <div className="flex items-start gap-4">
-              <div className="text-4xl">🏆</div>
+              <div className="text-5xl animate-pulse">🏆</div>
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-green-800 mb-2">Recommended Feature</h2>
-                <p className="text-lg font-semibold text-green-700 mb-3">{sortedFeatures[0].name}</p>
+                <h2 className="text-2xl font-bold text-green-800 mb-1">Final Recommendation</h2>
                 
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="inline-flex items-center justify-center gap-1 px-3 py-1 bg-green-100 border-2 border-green-400 rounded text-sm font-bold text-green-700">
-                    <TrendingUp className="w-4 h-4" />
-                    Score: {calculateScore(sortedFeatures[0]).toFixed(2)}/10
-                  </div>
-                </div>
+                {(() => {
+                  const rec = generateFinalRecommendation(sortedFeatures);
+                  return (
+                    <>
+                      <p className="text-lg font-bold text-green-700 mb-3">{rec.title}</p>
+                      
+                      <div className="bg-white/60 backdrop-blur rounded-lg p-4 mb-4 border border-green-200">
+                        <p className="text-gray-800 leading-relaxed mb-3">
+                          {rec.reasoning}
+                        </p>
+                        {rec.comparison && (
+                          <p className="text-gray-700 text-sm border-t border-green-200 pt-3">
+                            <span className="font-semibold">Comparison: </span>{rec.comparison}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-3 mb-3 flex-wrap">
+                        <div className="inline-flex items-center justify-center gap-1 px-4 py-2 bg-green-100 border-2 border-green-400 rounded-lg text-sm font-bold text-green-700">
+                          <TrendingUp className="w-4 h-4" />
+                          Score: {calculateScore(sortedFeatures[0]).toFixed(2)}/10
+                        </div>
+                        <span className={`px-4 py-2 rounded-lg text-sm font-bold border-2 ${getPriorityColor(calculateScore(sortedFeatures[0]))}`}>
+                          {getPriorityLabel(calculateScore(sortedFeatures[0]))}
+                        </span>
+                      </div>
 
-                {generateRecommendationReasoning(sortedFeatures[0]).length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {generateRecommendationReasoning(sortedFeatures[0]).map((reason, idx) => (
-                      <motion.span
-                        key={idx}
-                        className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-semibold border border-green-400"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.25 + (idx * 0.05) }}
-                      >
-                        ✓ {reason}
-                      </motion.span>
-                    ))}
-                  </div>
-                )}
+                      {generateRecommendationReasoning(sortedFeatures[0]).length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {generateRecommendationReasoning(sortedFeatures[0]).map((reason, idx) => (
+                            <motion.span
+                              key={idx}
+                              className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-semibold border border-green-400"
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.25 + (idx * 0.05) }}
+                            >
+                              ✓ {reason}
+                            </motion.span>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </motion.div>

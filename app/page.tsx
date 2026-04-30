@@ -23,73 +23,53 @@ const item = {
 };
 
 export default function Home() {
-  const [recommendations, setRecommendations] = useState<string[]>([]);
-  const [isRecommending, setIsRecommending] = useState(false);
-
-  // Call API to get recommendations based on user story and constraints
-  const fetchRecommendations = async () => {
-    if (!userStory.trim() && constraints.length === 0) {
-      toast.error("Please enter a user story or generate constraints first");
-      return;
-    }
-    setIsRecommending(true);
-    try {
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ problem: userStory, constraints }),
-      });
-      const data = await response.json();
-      setRecommendations(data.analysis?.recommendations || []);
-      if (data.analysis?.recommendations?.length > 0) {
-        toast.success("Recommendations loaded!");
-      }
-    } catch (error) {
-      toast.error("Failed to fetch recommendations");
-    } finally {
-      setIsRecommending(false);
-    }
-  };
-
   const { projects, addProject, deleteProject, setCurrentProject } = useProjectStore();
   const [projectName, setProjectName] = useState("");
   const [userStory, setUserStory] = useState("");
   const [constraints, setConstraints] = useState<string[]>([]);
   const [editingConstraint, setEditingConstraint] = useState<number | null>(null);
   const [constraintInput, setConstraintInput] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [newConstraint, setNewConstraint] = useState("");
 
-  // Call API to generate constraints from user story
-  const generateConstraints = async (story: string) => {
-    if (!story.trim()) return [];
-    setIsGenerating(true);
-    try {
-      const response = await fetch("/api/constraints", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userStory: story }),
-      });
-      const data = await response.json();
-      return data.constraints || [];
-    } catch (error) {
-      console.error("Failed to generate constraints:", error);
-      toast.error("Failed to generate constraints");
-      return [];
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  // Common constraint templates
+  const constraintTemplates = [
+    "Budget limitations",
+    "Timeline constraints",
+    "Team capacity",
+    "Scalability requirements",
+    "Security/Privacy",
+    "Mobile compatibility",
+    "Browser support",
+    "Regulatory compliance",
+  ];
 
-  const handleGenerateConstraints = async () => {
-    if (!userStory.trim()) {
-      toast.error("Please enter a user story first");
+  const handleAddConstraint = () => {
+    if (!newConstraint.trim()) {
+      toast.error("Constraint cannot be empty");
       return;
     }
-    const generated = await generateConstraints(userStory);
-    setConstraints(generated);
-    if (generated.length > 0) {
-      toast.success(`Generated ${generated.length} constraints!`);
+    if (constraints.includes(newConstraint.trim())) {
+      toast.error("Constraint already exists");
+      return;
     }
+    setConstraints([...constraints, newConstraint.trim()]);
+    setNewConstraint("");
+    toast.success("Constraint added!");
+  };
+
+  const handleAddConstraintFromTemplate = (template: string) => {
+    if (constraints.includes(template)) {
+      toast.error("Constraint already exists");
+      return;
+    }
+    setConstraints([...constraints, template]);
+    toast.success(`"${template}" added!`);
+  };
+
+  const handleClearAllConstraints = () => {
+    if (constraints.length === 0) return;
+    setConstraints([]);
+    toast.success("All constraints cleared");
   };
 
   const handleAddProject = () => {
@@ -161,90 +141,158 @@ export default function Home() {
 
           {/* New Project Form */}
           <motion.div 
-            className="flex flex-col gap-4 max-w-md mx-auto bg-gray-50 p-6 rounded-lg border border-purple-200 shadow"
+            className="flex flex-col gap-4 max-w-2xl mx-auto bg-gray-50 p-6 rounded-lg border border-purple-200 shadow"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <input
-              type="text"
-              placeholder="Enter new project name..."
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 transition-all"
-            />
-            <textarea
-              placeholder="Describe your user story..."
-              value={userStory}
-              onChange={(e) => setUserStory(e.target.value)}
-              className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 transition-all min-h-[80px]"
-            />
-            <motion.button
-              onClick={handleGenerateConstraints}
-              disabled={isGenerating}
-              className="px-4 py-2 bg-gradient-to-r from-purple-400 to-orange-400 rounded-lg text-white font-medium mb-2 disabled:opacity-50"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              {isGenerating ? "Generating..." : "Generate Constraints"}
-            </motion.button>
-            {constraints.length > 0 && (
-              <div className="bg-white border border-purple-100 rounded p-3 mb-2">
-                <div className="font-semibold mb-2 text-purple-700">Constraints (editable):</div>
-                <ul className="space-y-2">
-                  {constraints.map((c, idx) => (
-                    <li key={idx} className="flex items-center gap-2">
-                      {editingConstraint === idx ? (
-                        <>
-                          <input
-                            className="flex-1 px-2 py-1 border rounded"
-                            value={constraintInput}
-                            onChange={e => setConstraintInput(e.target.value)}
-                          />
-                          <button className="text-green-600" onClick={() => handleSaveConstraint(idx)}>Save</button>
-                          <button className="text-gray-500" onClick={() => setEditingConstraint(null)}>Cancel</button>
-                        </>
-                      ) : (
-                        <>
-                          <span className="flex-1">{c}</span>
-                          <button className="text-blue-600" onClick={() => handleEditConstraint(idx)}>Edit</button>
-                          <button className="text-red-500" onClick={() => handleRemoveConstraint(idx)}>Remove</button>
-                        </>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+            {/* Project Name */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Project Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., Mobile App Redesign, New Payment Flow..."
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                className="w-full px-4 py-3 bg-white border-2 border-purple-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 transition-all"
+                suppressHydrationWarning
+              />
+            </div>
+
+            {/* User Story */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                User Story <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                placeholder="Describe your user story, problem, or feature idea..."
+                value={userStory}
+                onChange={(e) => setUserStory(e.target.value)}
+                className="w-full px-4 py-3 bg-white border-2 border-purple-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 transition-all min-h-[100px]"
+                suppressHydrationWarning
+              />
+              <p className="text-xs text-gray-500 mt-1">{userStory.length} characters</p>
+            </div>
+
+            {/* Quick Add Constraint */}
+            <div className="bg-white border border-purple-100 rounded p-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">Add Constraints</label>
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  placeholder="Type a constraint and press add..."
+                  value={newConstraint}
+                  onChange={(e) => setNewConstraint(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleAddConstraint()}
+                  className="flex-1 px-3 py-2 border-2 border-purple-200 rounded focus:outline-none focus:border-purple-600 text-sm"
+                />
+                <motion.button
+                  onClick={handleAddConstraint}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium text-sm transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Add
+                </motion.button>
               </div>
+
+              {/* Constraint Templates */}
+              <div className="mb-3">
+                <p className="text-xs font-semibold text-gray-600 mb-2">Quick suggestions:</p>
+                <div className="flex flex-wrap gap-2">
+                  {constraintTemplates.map((template, idx) => (
+                    <motion.button
+                      key={idx}
+                      onClick={() => handleAddConstraintFromTemplate(template)}
+                      disabled={constraints.includes(template)}
+                      className="text-xs px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      + {template}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Constraints List with Badge */}
+              {constraints.length > 0 && (
+                <div className="border-t border-purple-100 pt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700">Constraints Added:</span>
+                    <span className="inline-block bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      {constraints.length}
+                    </span>
+                  </div>
+                  <ul className="space-y-2">
+                    {constraints.map((c, idx) => (
+                      <motion.li 
+                        key={idx} 
+                        className="flex items-center gap-2 bg-purple-50 p-2 rounded"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                      >
+                        {editingConstraint === idx ? (
+                          <>
+                            <input
+                              className="flex-1 px-2 py-1 border rounded text-sm"
+                              value={constraintInput}
+                              onChange={e => setConstraintInput(e.target.value)}
+                              autoFocus
+                            />
+                            <button className="text-xs text-green-600 font-semibold" onClick={() => handleSaveConstraint(idx)}>Save</button>
+                            <button className="text-xs text-gray-500" onClick={() => setEditingConstraint(null)}>Cancel</button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex-1 text-sm">{c}</span>
+                            <button className="text-xs text-blue-600 hover:text-blue-800" onClick={() => handleEditConstraint(idx)}>Edit</button>
+                            <button className="text-xs text-red-500 hover:text-red-700" onClick={() => handleRemoveConstraint(idx)}>Remove</button>
+                          </>
+                        )}
+                      </motion.li>
+                    ))}
+                  </ul>
+                  <motion.button
+                    onClick={handleClearAllConstraints}
+                    className="w-full mt-3 text-xs text-gray-500 hover:text-gray-700 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    Clear All Constraints
+                  </motion.button>
+                </div>
+              )}
+            </div>
+
+            {/* Form Summary */}
+            {(projectName || userStory || constraints.length > 0) && (
+              <motion.div 
+                className="bg-blue-50 border border-blue-200 rounded p-3"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <p className="text-xs font-semibold text-blue-700 mb-2">📋 Project Summary:</p>
+                <div className="space-y-1 text-xs text-blue-900">
+                  {projectName && <p>• <strong>Project:</strong> {projectName}</p>}
+                  {userStory && <p>• <strong>Story:</strong> {userStory.substring(0, 50)}...</p>}
+                  {constraints.length > 0 && <p>• <strong>Constraints:</strong> {constraints.length} added</p>}
+                </div>
+              </motion.div>
             )}
 
-            {/* Recommended Features Section */}
-            <motion.button
-              onClick={fetchRecommendations}
-              disabled={isRecommending}
-              className="px-4 py-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg text-white font-medium mb-2 disabled:opacity-50"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              {isRecommending ? "Loading..." : "Show Recommended Features"}
-            </motion.button>
-            {recommendations.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-2">
-                <div className="font-semibold mb-2 text-blue-700">Recommended Features:</div>
-                <ul className="list-disc pl-5 space-y-1">
-                  {recommendations.map((rec, idx) => (
-                    <li key={idx} className="text-blue-900">{rec}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {/* Create Button */}
             <motion.button
               onClick={handleAddProject}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-orange-500 hover:shadow-lg rounded-lg font-medium flex items-center gap-2 transition-all text-white"
+              disabled={!projectName.trim()}
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-orange-500 hover:shadow-lg rounded-lg font-medium flex items-center justify-center gap-2 transition-all text-white disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              suppressHydrationWarning
             >
               <Plus className="w-5 h-5" />
-              Create
+              Create Project
             </motion.button>
           </motion.div>
         </motion.div>

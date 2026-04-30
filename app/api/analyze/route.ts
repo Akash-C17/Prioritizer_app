@@ -5,8 +5,37 @@ export async function POST(req: NextRequest) {
     const { problem, constraints } = await req.json();
 
     // This would connect to your AI service (OpenAI, Claude, etc.)
-    // For now, returning mock data
+    // For now, returning enhanced mock data with trade-off metrics
     const analysis = {
+      features: [
+        {
+          title: "Prioritize core features for MVP",
+          impact: 9,
+          business: 8,
+          alignment: 9,
+          effort: 7,
+          cost: 6,
+          risk: 4,
+        },
+        {
+          title: "Phase feature rollout based on feedback",
+          impact: 8,
+          business: 9,
+          alignment: 8,
+          effort: 5,
+          cost: 3,
+          risk: 2,
+        },
+        {
+          title: "Implement modular architecture",
+          impact: 7,
+          business: 8,
+          alignment: 9,
+          effort: 9,
+          cost: 8,
+          risk: 5,
+        },
+      ],
       tradeoffs: [
         "Speed to market vs. Feature completeness",
         "User experience vs. Development cost",
